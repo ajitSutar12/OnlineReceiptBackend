@@ -1,0 +1,32 @@
+export class TRNACCTONLINERCPTHDTO {
+    TRAN_NO: number
+    TRAN_TYPE: number
+    TRAN_SUBTYPE: number
+    TRAN_DATE: string
+    PAID_BY: string
+    TRAN_AMT: number
+    UTR_NO: string
+    RECTRAN_DATE: string
+    REMARK: string
+    IS_PRINTED: number
+    STATUS_CODE: number
+    SYSADD_DATETIME: string
+    SYSADD_LOGIN: string
+    SYSCHNG_DATETIME: string
+    SYSCHNG_LOGIN: string
+    USER_CODE: number
+    SYS_DATE: string
+    USER_NAME: string
+    DEPT_CODE: number
+    FEESTRU_CODE: number
+    EXAM_NAME: string
+    EXAM_YEAR: string
+    REF_NO: string
+    DEPT_NAME: string
+    PAY_MODE: number
+    FEESTRU_NAME: string
+    PURPOSE_CODE: number
+    SUB_GLACNO: number
+    BANK_CODE: number
+    EXPIRE_DATE: string
+}
