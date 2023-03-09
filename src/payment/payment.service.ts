@@ -1532,7 +1532,7 @@ export class PaymentService {
                 }
             }
             //update payment status          
-            let updateStatus = await connection1.execute(`update TRNACCTONLINERCPTH set STATUS_CODE=0,hash='${data.hash}',rid='${data.key}' where TRAN_NO =  ${data.txnid}`);
+            let updateStatus = await connection1.execute(`update TRNACCTONLINERCPTH set STATUS_CODE=0 where TRAN_NO =  ${data.txnid}`);
             connection1.commit();
             let update = await connection1.execute(`update TRNACCTONLINERCPTI set STATUS_CODE=0 where TRAN_NO =  ${data.txnid}`);
             connection1.commit();
@@ -1545,9 +1545,72 @@ export class PaymentService {
             expiryDate = expiryDate.replace('-', '');
             expiryDate = expiryDate.replace('-', '');
             expiryDate = expiryDate.replace(' ', '');
-            let updateStatus = await connection1.execute(`update TRNACCTONLINERCPTH set STATUS_CODE=21,hash='${data.hash}',rid='${data.key}', EXPIRE_DATE='${expiryDate}' where TRAN_NO = ${data.txnid}`);
+            let updateStatus = await connection1.execute(`update TRNACCTONLINERCPTH set STATUS_CODE=21, EXPIRE_DATE='${expiryDate}' where TRAN_NO = ${data.txnid}`);
             connection1.commit();
             let update = await connection1.execute(`update TRNACCTONLINERCPTI set STATUS_CODE=21 where TRAN_NO = ${data.txnid}`);
+            connection1.commit();
+        }
+        connection1.close()
+    }
+    //webhook response entry if transaction is success/fail/usercanelled
+    async easebuzzChallan(data) {
+        let connection1 = await oracledb.getConnection({ user: "BWAYSCOMM", password: "BWAYSCOMM", connectString: "(DESCRIPTION =(ADDRESS = (PROTOCOL = TCP)(HOST = ERP3.erpcompserv.local)(PORT = 1521))(CONNECT_DATA =(SID= ORCL)))" });
+        //success status
+        if (data.status == 'success') {
+            let recepit = await this.onlinercpthRepository.query(`select * from TRNACCTONLINERCPTH where TRNACCTONLINERCPTH.TRAN_NO =${data.txnid}`);
+            let particular = await this.commanOnlineRepository.query(`select * from TRNACCTONLINERCPTI where TRAN_NO = ${data.txnid}`);
+            let systemDate = moment().format("YYYY-MM-DD HH:mm:ss");
+            systemDate = systemDate.replace('-', '');
+            systemDate = systemDate.replace('-', '');
+            systemDate = systemDate.replace(' ', '');
+            let tran_date = moment().format('YYYYMMDD');
+            let finacialYear = await this.getCurrentFinancialYear();
+            let next_transaction = await this.next_transcationData();
+            //get bank account Number
+            let bankDetails = await this.bankRepository.query(`select GL_ACNO,CODE from CNFONLINEBANKS where CODE = ${recepit[0].BANK_CODE}`);
+            let UTR_NO = data.easepayid;
+            let mainData = await connection1.execute(`insert into TRNACCTCOMMRCPTH(TRAN_NO,TRAN_TYPE,TRAN_SUBTYPE,SHORT_NAME,TRAN_DATE,FIN_YEAR,PAID_BY,GL_ACNO,PURPOSE_CODE,EXAM_NAME,EXT_REFNO,EXT_REFDATE,BANK_CODE,DEPT_CODE,FEESTRU_CODE,TRAN_AMT,CURRENCY,STUDENT_CODE,REF_TRANNO,REF_TRANDATE,REF_TRANYEAR,STATUS_CODE,SYS_DATE,SYSADD_LOGIN)values(${next_transaction},102,62,'REC','${tran_date}',${finacialYear},'${recepit[0].PAID_BY}',${bankDetails[0].GL_ACNO},${recepit[0].PURPOSE_CODE},'${recepit[0].EXAM_NAME}','${UTR_NO}','${tran_date}',${recepit[0].BANK_CODE},${recepit[0].DEPT_CODE},${recepit[0].FEESTRU_CODE},${recepit[0].TRAN_AMT},'INR',0,${recepit[0].TRAN_NO},'${recepit[0].TRAN_DATE}',${finacialYear},0,'${systemDate}','${recepit[0].SYSADD_LOGIN}')`);
+            connection1.commit();
+
+            //INSERT DATA INTO 
+            let srno = 0;
+            for (let element of particular) {
+                if (element.AMOUNT != 0 && element.AMOUNT != null) {
+                    srno += 1
+                    let particularData = await connection1.execute(`insert into TRNACCTCOMMRCPTI(TRAN_NO,TRAN_DATE,GL_ACNO,AMOUNT,BUDGET_CODE,IS_DEBT,STATUS_CODE,SYS_DATE,SR_NO)values(${next_transaction},'${tran_date}',${element.GL_ACNO},${element.AMOUNT},'${element.BUDGET_CODE}',0,0,'${systemDate}',${srno})`);
+                    connection1.commit();
+                }
+            }
+            //update payment status          
+            let updateStatus = await connection1.execute(`update TRNACCTONLINERCPTH set STATUS_CODE=0 where TRAN_NO =  ${data.txnid}`);
+            connection1.commit();
+            let update = await connection1.execute(`update TRNACCTONLINERCPTI set STATUS_CODE=0 where TRAN_NO =  ${data.txnid}`);
+            connection1.commit();
+        }
+        // fail/technical/pending/abandoned/error condition status
+        else if (data.status == 'failure') {
+            let systemDate = moment().format("YYYY-MM-DD HH:mm:ss");
+            let expiry = moment(systemDate).add(72, 'hours').format('YYYY-MM-DD hh:mm:ss');
+            let expiryDate = expiry.toString()
+            expiryDate = expiryDate.replace('-', '');
+            expiryDate = expiryDate.replace('-', '');
+            expiryDate = expiryDate.replace(' ', '');
+            let updateStatus = await connection1.execute(`update TRNACCTONLINERCPTH set STATUS_CODE=21, EXPIRE_DATE='${expiryDate}' where TRAN_NO = ${data.txnid}`);
+            connection1.commit();
+            let update = await connection1.execute(`update TRNACCTONLINERCPTI set STATUS_CODE=21 where TRAN_NO = ${data.txnid}`);
+            connection1.commit();
+        }
+        // fail/technical/pending/abandoned/error condition status
+        else if (data.status == 'userCancelled') {
+            let systemDate = moment().format("YYYY-MM-DD HH:mm:ss");
+            let expiry = moment(systemDate).add(72, 'hours').format('YYYY-MM-DD hh:mm:ss');
+            let expiryDate = expiry.toString()
+            expiryDate = expiryDate.replace('-', '');
+            expiryDate = expiryDate.replace('-', '');
+            expiryDate = expiryDate.replace(' ', '');
+            let updateStatus = await connection1.execute(`update TRNACCTONLINERCPTH set STATUS_CODE=11, EXPIRE_DATE='${expiryDate}' where TRAN_NO = ${data.txnid}`);
+            connection1.commit();
+            let update = await connection1.execute(`update TRNACCTONLINERCPTI set STATUS_CODE=11 where TRAN_NO = ${data.txnid}`);
             connection1.commit();
         }
         connection1.close()

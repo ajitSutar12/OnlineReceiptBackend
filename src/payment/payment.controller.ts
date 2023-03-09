@@ -204,4 +204,9 @@ export class PaymentController {
         }
         return htmlData;
     }
+    
+    @Post('/easebuzzChallan')
+    easebuzzChallan(@Body() data) {
+        this.formService.easebuzzChallan(data)
+    }
 }
