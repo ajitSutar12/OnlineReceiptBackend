@@ -1,4 +1,4 @@
-import { Body, Request, Controller, Get, Param, Post, UseGuards, Query, Put } from '@nestjs/common';
+import { Body, Request, Controller, Get, Param, Post, UseGuards, Query, Put, HttpCode } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { PaymentService } from './payment.service'
 
@@ -190,13 +190,14 @@ export class PaymentController {
 
     @Post('/easebuzz')
     easebuzz(@Body() data) {
+        console.log(data)
         this.formService.easebuzz(data);
         let htmlData
         if (data.status == 'success') {
-            htmlData = `<div style="text-align:center;"><h1>Your Payment Was Successful </h1><br><a href="http://localhost:5000/dashboard"><button onclick="window.close();">Close</button></a></div>`;
+            htmlData = `<div style="text-align:center;"><h1>Your Payment Was Successful </h1><br><a href="http://localhost:4200/dashboard"><button onclick="window.close();">Close</button></a></div>`;
             // htmlData = `<div style="text-align:center;"><h1>Your Payment Was Successful </h1><br><a href="http://paysuk.unishivaji.ac.in/BWaysReceipt/dashboard"><button onclick="window.close();">Close</button></a></div>`;
         }
-        else if (data.status == 'CHALLAN_GENERATED') {
+        else if (data.status == 'pending') {
             htmlData = `<div style="text-align:center;"><h1>Challan Generated</h1><br><a href="http://paysuk.unishivaji.ac.in/BWaysReceipt/dashboard"><button onclick="window.close();">Close</button></a></div>`;
         }
         else {
@@ -205,8 +206,25 @@ export class PaymentController {
         return htmlData;
     }
 
-    @Post('/easebuzzChallan')
-    easebuzzChallan(@Body() data) {
-        this.formService.easebuzzChallan(data)
+    @Post('/easebuzzWebhook')
+    @HttpCode(200)
+    easebuzzWebhook(@Body() data) {
+        return this.formService.easebuzzWebhook(data)
     }
+
+    @Get('invoiceList')
+    invoiceList() {
+        return this.formService.invoiceList()
+    }
+    @Get('/getInvoiceDetail:id')
+    getInvoiceDetail(@Param() id) {
+        return this.formService.getInvoiceDetail(id);
+    }
+
+
+    @Post('/IDBI')
+    IDBI(@Body() data) {
+        this.formService.IDBI(data)
+    }
+
 }
