@@ -9,7 +9,6 @@ import { TRNACCTONLINERCPTH } from '../payment/entity/TRNACCTONLINERCPTH.entity'
 import { TRNACCTCOMMRCPTH } from '../payment/entity/TRNACCTCOMMRCPTH.entity'
 import { CNFONLINEBANKS } from '../payment/dropdown-entity/bank.entity'
 
-
 @Module({
   imports: [
     TypeOrmModule.forFeature([CNFUSERS, PASSRECQUE, TRNACCTONLINERCPTH, TRNACCTCOMMRCPTH], 'BWAYSCOMMON'),

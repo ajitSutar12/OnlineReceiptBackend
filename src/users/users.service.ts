@@ -29,7 +29,7 @@ export class UsersService {
 
 
   async findOne(username: string): Promise<User | undefined> {
-    let connection1 = await oracledb.getConnection({ user: "BWAYSCOMM", password: "BWAYSCOMM", connectString: "(DESCRIPTION =(ADDRESS = (PROTOCOL = TCP)(HOST = ERP3.erpcompserv.local)(PORT = 1521))(CONNECT_DATA =(SID= ORCL)))" });
+    let connection1 = await oracledb.getConnection({ user: "paysuk", password: "sukpay$321#", connectString: "(DESCRIPTION =(ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.4.121)(PORT = 1521))(CONNECT_DATA =(SID= payg1)))" });
     let result = await connection1.execute(`select * from CNFUSERS where USER_ID='${username}'`);
     connection1.close();
     this.userData = await this.jsonConverter(result);

@@ -68,13 +68,13 @@ export class RegistrationService {
         let query = await this.formPostRepository.query(`update CNFUSERS set NAME= '${data.NAME}', CELL_NO = '${data.CELL_NO}',EMAIL_ID= '${data.EMAIL_ID}' where USER_ID = '${data.USER_ID}'`);
         return query;
     }
+
     async getUserData(data) {
         let query = await this.formPostRepository.query(`select * from cnfusers where USER_ID = '${data.USER_ID}'`);
         return query;
     }
-
     async getQuestionsList() {
-        return this.queRepository.query(`select * from PASSRECQUE`)
+        return await this.queRepository.query(`select * from PASSRECQUE`)
     }
 
 
@@ -97,22 +97,33 @@ export class RegistrationService {
 
     // Add new user using excel upload
     async utility(element) {
-        let PASSWORD = await md5(element.PRNNO);
-        let connection2 = await oracledb.getConnection({ user: "BWAYSCOMM", password: "BWAYSCOMM", connectString: "(DESCRIPTION =(ADDRESS = (PROTOCOL = TCP)(HOST = DESKTOP-R4UE9QT)(PORT = 1521))(CONNECT_DATA =(SID= bankdb)))" });
-
-        let userExist = await connection2.execute(`select NVL ((select 'Y' from  dual where exists (select  1 from cnfusers where USER_ID = '${element.PRNNO}')),'N') as rec_exists from dual`)
-        await connection2.close();
-        // console.log(userExist);
-
-        if (await userExist.rows[0][0] == 'N') {
-            let connection1 = await oracledb.getConnection({ user: "BWAYSCOMM", password: "BWAYSCOMM", connectString: "(DESCRIPTION =(ADDRESS = (PROTOCOL = TCP)(HOST = DESKTOP-R4UE9QT)(PORT = 1521))(CONNECT_DATA =(SID= bankdb)))" });
-
-            let result = await connection1.execute(`insert into CNFUSERS (USER_ID,USER_TYPE,NAME,CELL_NO,EMAIL_ID,COLLEGE_CODE,PASSWORD,PASSREQQUE,PASSREQANS) values ('${element.PRNNO}',${element.TYPE}, '${element.STUDENTNAME}', '${element.STUDENTMOBILENO}', '${element.STUDENTMAILID}', 0,'${PASSWORD}',1 ,'${element.PRNNO}')`);
-            await connection1.commit();
-            await connection1.close();
-            return result
-        } else {
+        // console.log(element.PRNNO)
+        if (element.PRNNO == undefined) {
             return null
+        }
+        else {
+            element.PRNNO = element.PRNNO.toString()
+            element.PRNNO = element.PRNNO.trim()
+            let PASSWORD = await md5(element.PRNNO);
+
+
+            let connection2 = await oracledb.getConnection({ user: "BWAYSCOMM", password: "BWAYSCOMM", connectString: "(DESCRIPTION =(ADDRESS = (PROTOCOL = TCP)(HOST = DESKTOP-R4UE9QT)(PORT = 1521))(CONNECT_DATA =(SID= bankdb)))" });
+
+            let userExist = await connection2.execute(`select NVL ((select 'Y' from  dual where exists (select  1 from cnfusers where USER_ID = '${element.PRNNO}')),'N') as rec_exists from dual`)
+            await connection2.close();
+            // console.log(userExist);
+
+            if (await userExist.rows[0][0] == 'N') {
+                let connection1 = await oracledb.getConnection({ user: "BWAYSCOMM", password: "BWAYSCOMM", connectString: "(DESCRIPTION =(ADDRESS = (PROTOCOL = TCP)(HOST = DESKTOP-R4UE9QT)(PORT = 1521))(CONNECT_DATA =(SID= bankdb)))" });
+
+                let result = await connection1.execute(`insert into CNFUSERS (USER_ID,USER_TYPE,NAME,CELL_NO,EMAIL_ID,COLLEGE_CODE,PASSWORD,PASSREQQUE,PASSREQANS) values ('${element.PRNNO}',${element.TYPE}, '${element.STUDENTNAME}', '${element.STUDENTMOBILENO}', '${element.STUDENTMAILID}', 0,'${PASSWORD}',1 ,'${element.PRNNO}')`);
+                await connection1.commit();
+
+                await connection1.close();
+                return result
+            } else {
+                return null
+            }
         }
 
         // if (index == data.length - 1) {
@@ -121,6 +132,16 @@ export class RegistrationService {
         // })
 
     }
+
+    // async utility(element) {
+    //     let connection2 = await oracledb.getConnection({ user: "BWAYSCOMM", password: "BWAYSCOMM", connectString: "(DESCRIPTION =(ADDRESS = (PROTOCOL = TCP)(HOST = DESKTOP-R4UE9QT)(PORT = 1521))(CONNECT_DATA =(SID= bankdb)))" });
+
+    //     let result = await connection2.execute(`delete from cnfusers where user_id='${element.PRNNO}'`);
+    //     await connection2.commit();
+    //     await connection2.close()
+
+    // }
+
 
     async getCurrentFinancialYear() {
         var fiscalyear = "";
@@ -180,8 +201,8 @@ export class RegistrationService {
         return data;
     }
 
-
-    async staticuploadfile(data) {
+    //static tranasction  upload using file
+    async staticUpdate(data) {
         let connection1 = await oracledb.getConnection({ user: "BWAYSCOMM", password: "BWAYSCOMM", connectString: "(DESCRIPTION =(ADDRESS = (PROTOCOL = TCP)(HOST = DESKTOP-R4UE9QT)(PORT = 1521))(CONNECT_DATA =(SID= bankdb)))" });
         let recepit = await this.onlinercpthRepository.query(`select * from TRNACCTONLINERCPTH where TRNACCTONLINERCPTH.TRAN_NO =${data.CRN}`);
         let particularData = await connection1.execute(`select * from  TRNACCTONLINERCPTI where TRAN_NO = ${data.CRN}`);
@@ -197,7 +218,7 @@ export class RegistrationService {
         let bankDetails = await this.bankRepository.query(`select GL_ACNO,CODE from CNFONLINEBANKS where CODE = ${recepit[0].BANK_CODE}`);
         let UTRDATE = tran_date;
         //insert data into TRNACCTCOMMRCPTH
-        let mainData = await connection1.execute(`insert into TRNACCTCOMMRCPTH(TRAN_NO,TRAN_TYPE,TRAN_SUBTYPE,SHORT_NAME,TRAN_DATE,FIN_YEAR,PAID_BY,GL_ACNO,PURPOSE_CODE,EXAM_NAME,EXT_REFDATE,BANK_CODE,DEPT_CODE,FEESTRU_CODE,TRAN_AMT,CURRENCY,STUDENT_CODE,REF_TRANNO,REF_TRANDATE,REF_TRANYEAR,STATUS_CODE,SYS_DATE,EXT_REFNO)values(${next_transaction},102,62,'REC','${UTRDATE}',${finacialYear},'${recepit[0].PAID_BY}','${bankDetails[0].GL_ACNO}',${recepit[0].PURPOSE_CODE},'${recepit[0].EXAM_NAME}','${UTRDATE}',${recepit[0].BANK_CODE},${recepit[0].DEPT_CODE},${recepit[0].FEESTRU_CODE},${recepit[0].TRAN_AMT},'INR',0,${recepit[0].TRAN_NO},'${recepit[0].TRAN_DATE}',${finacialYear},0,'${systemDate}',${data.TRANID})`);
+        let mainData = await connection1.execute(`insert into TRNACCTCOMMRCPTH(TRAN_NO,TRAN_TYPE,TRAN_SUBTYPE,SHORT_NAME,TRAN_DATE,FIN_YEAR,PAID_BY,GL_ACNO,PURPOSE_CODE,EXAM_NAME,EXT_REFDATE,BANK_CODE,DEPT_CODE,FEESTRU_CODE,TRAN_AMT,CURRENCY,STUDENT_CODE,REF_TRANNO,REF_TRANDATE,REF_TRANYEAR,STATUS_CODE,SYS_DATE,EXT_REFNO)values(${next_transaction},102,62,'REC','${UTRDATE}',${finacialYear},'${recepit[0].PAID_BY}','${bankDetails[0].GL_ACNO}',${recepit[0].PURPOSE_CODE},'${recepit[0].EXAM_NAME}','${UTRDATE}',${recepit[0].BANK_CODE},${recepit[0].DEPT_CODE},${recepit[0].FEESTRU_CODE},${recepit[0].TRAN_AMT},'INR',0,${recepit[0].TRAN_NO},'${recepit[0].TRAN_DATE}',${finacialYear},0,'${systemDate}','${data.TRANID}')`);
         await connection1.commit();
         await connection1.close();
         //INSERT DATA INTO 
@@ -222,12 +243,11 @@ export class RegistrationService {
 
 
 
-
     /////////////////////////////////////////////////////
     ////////////////PMS data fetch//////////////////////////////
     //fetch purpose list for college type
     async getmstbank() {
-        let connection = await oracledb.getConnection({ user: "BWAYSFAS", password: "BWAYSFAS", connectString: "(DESCRIPTION =(ADDRESS = (PROTOCOL = TCP)(HOST = DESKTOP-R4UE9QT)(PORT = 1521))(CONNECT_DATA =(SID= bankdb)))" });
+        let connection = await oracledb.getConnection({ user: "BWAYSFAS", password: "bwaysfas", connectString: "(DESCRIPTION =(ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.4.92)(PORT = 1521))(CONNECT_DATA =(SID= fas21)))" });
 
         let banklist = await connection.execute(`SELECT * FROM mstbanksgroup`);
         await connection.close();
@@ -235,24 +255,24 @@ export class RegistrationService {
     }
 
     async getpaymentcode() {
-        let connection = await oracledb.getConnection({ user: "BWAYSFAS", password: "BWAYSFAS", connectString: "(DESCRIPTION =(ADDRESS = (PROTOCOL = TCP)(HOST = DESKTOP-R4UE9QT)(PORT = 1521))(CONNECT_DATA =(SID= bankdb)))" });
+        let connection = await oracledb.getConnection({ user: "BWAYSFAS", password: "bwaysfas", connectString: "(DESCRIPTION =(ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.4.92)(PORT = 1521))(CONNECT_DATA =(SID= fas21)))" });
 
-        let banklist = await connection.execute(`SELECT gl_acno, budget_code FROM MSTACCTGL WHERE SUBSTR(BUDGET_CODE,1,4) IN ('A.2.','D.1.','D.2.','D.3.','D.4.','E.3.') AND is_active = 1  AND status_code = 0 AND budget_side = 'P'`);
+        let banklist = await connection.execute(`SELECT gl_acno, budget_code FROM MSTACCTGL WHERE SUBSTR(BUDGET_CODE,1,4) IN ('A.2.','D.1.','D.2.','D.3.','D.4.','E.3.') AND is_active = 1  AND status_code = 0 AND budget_side = 'P' OR budget_code IN('B.2.P.106') ORDER BY budget_code ASC`);
         await connection.close();
         return this.jsonConverter(banklist);  //updated code
     }
 
     async getReceiptList() {
-        let connection = await oracledb.getConnection({ user: "BWAYSFAS", password: "BWAYSFAS", connectString: "(DESCRIPTION =(ADDRESS = (PROTOCOL = TCP)(HOST = DESKTOP-R4UE9QT)(PORT = 1521))(CONNECT_DATA =(SID= bankdb)))" });
+        let connection = await oracledb.getConnection({ user: "BWAYSFAS", password: "bwaysfas", connectString: "(DESCRIPTION =(ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.4.92)(PORT = 1521))(CONNECT_DATA =(SID= fas21)))" });
 
-        let banklist = await connection.execute(`SELECT gl_acno, budget_code FROM MSTACCTGL WHERE SUBSTR(BUDGET_CODE,1,4) IN ('A.2.','D.1.','D.2.','D.3.','D.4.','E.3.') AND is_active = 1  AND status_code = 0 AND budget_side = 'R'`);
+        let banklist = await connection.execute(`SELECT gl_acno, budget_code FROM MSTACCTGL WHERE SUBSTR(BUDGET_CODE,1,4) IN ('A.2.','D.1.','D.2.','D.3.','D.4.','E.3.') AND is_active = 1  AND status_code = 0 AND budget_side = 'R' OR budget_code IN('B.2.R.106') ORDER BY budget_code ASC`);
         await connection.close();
         return this.jsonConverter(banklist);  //updated code
     }
 
 
     async getmstbankbranch(code) {
-        let connection = await oracledb.getConnection({ user: "BWAYSFAS", password: "BWAYSFAS", connectString: "(DESCRIPTION =(ADDRESS = (PROTOCOL = TCP)(HOST = DESKTOP-R4UE9QT)(PORT = 1521))(CONNECT_DATA =(SID= bankdb)))" });
+        let connection = await oracledb.getConnection({ user: "BWAYSFAS", password: "bwaysfas", connectString: "(DESCRIPTION =(ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.4.92)(PORT = 1521))(CONNECT_DATA =(SID= fas21)))" });
 
         let banklist = await connection.execute(`SELECT sub_glacno, subgl_name, bank_acno FROM MSTACCTGLSUB WHERE sub_glcode = 12 AND is_active = 1 AND status_code = 0 AND bank_code = ${code}`);
         await connection.close();

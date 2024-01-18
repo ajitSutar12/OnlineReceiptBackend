@@ -96,10 +96,15 @@ export class PaymentController {
         return this.formService.getResponse(data);
     }
 
-    @Get('/success:UserCode')
-    success(@Param() UserCode) {
-        return this.formService.success(UserCode.UserCode);
+    @Post('/success')
+    success(@Body() UserCode) {
+        return this.formService.success(UserCode.userid);
     }
+
+    // @Get('/success:UserCode')
+    // success(@Param() UserCode) {
+    //     return this.formService.success(UserCode.UserCode);
+    // }
     // UnSuccess
     @Get('/unsuccess:UserCode')
     unsuccess(@Param() UserCode) {
@@ -177,25 +182,26 @@ export class PaymentController {
         return this.formService.getBillDeskResponse(data)
     }
 
-
-    // @Put('/updateMIS')
-    // updateMIS(@Body() data) {
-    //     return this.formService.updateMIS(data);
-    // }
-
     @Post('/updateBankStatus')
     updateBankStatus(@Body() data) {
         return this.formService.updateBankStatus(data);
     }
 
+    @Get('invoiceList')
+    invoiceList() {
+        return this.formService.invoiceList()
+    }
+    @Get('/getInvoiceDetail:id')
+    getInvoiceDetail(@Param() id) {
+        return this.formService.getInvoiceDetail(id);
+    }
     @Post('/easebuzz')
-    easebuzz(@Body() data) {
-        console.log(data)
-        this.formService.easebuzz(data);
+    async easebuzz(@Body() data) {
+        await this.formService.easebuzz(data);
         let htmlData
         if (data.status == 'success') {
-            htmlData = `<div style="text-align:center;"><h1>Your Payment Was Successful </h1><br><a href="http://localhost:4200/dashboard"><button onclick="window.close();">Close</button></a></div>`;
-            // htmlData = `<div style="text-align:center;"><h1>Your Payment Was Successful </h1><br><a href="http://paysuk.unishivaji.ac.in/BWaysReceipt/dashboard"><button onclick="window.close();">Close</button></a></div>`;
+            // htmlData = `<div style="text-align:center;"><h1>Your Payment Was Successful </h1><br><a href="http://localhost:4200/dashboard"><button onclick="window.close();">Close</button></a></div>`;
+            htmlData = `<div style="text-align:center;"><h1>Your Payment Was Successful </h1><br><a href="http://paysuk.unishivaji.ac.in/BWaysReceipt/dashboard"><button onclick="window.close();">Close</button></a></div>`;
         }
         else if (data.status == 'pending') {
             htmlData = `<div style="text-align:center;"><h1>Challan Generated</h1><br><a href="http://paysuk.unishivaji.ac.in/BWaysReceipt/dashboard"><button onclick="window.close();">Close</button></a></div>`;
@@ -208,23 +214,7 @@ export class PaymentController {
 
     @Post('/easebuzzWebhook')
     @HttpCode(200)
-    easebuzzWebhook(@Body() data) {
-        return this.formService.easebuzzWebhook(data)
+    async easebuzzWebhook(@Body() data) {
+        return await this.formService.easebuzzWebhook(data)
     }
-
-    @Get('invoiceList')
-    invoiceList() {
-        return this.formService.invoiceList()
-    }
-    @Get('/getInvoiceDetail:id')
-    getInvoiceDetail(@Param() id) {
-        return this.formService.getInvoiceDetail(id);
-    }
-
-
-    @Post('/IDBI')
-    IDBI(@Body() data) {
-        this.formService.IDBI(data)
-    }
-
 }

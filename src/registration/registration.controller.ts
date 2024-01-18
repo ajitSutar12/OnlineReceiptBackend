@@ -31,7 +31,7 @@ export class RegistrationController {
     updateProfile(@Body() data) {
         return this.formService.updateProfile(data);
     }
-
+    
     @Post('/getUserData')
     getUserData(@Body() data) {
         return this.formService.getUserData(data);
@@ -60,7 +60,7 @@ export class RegistrationController {
 
 
 
-    /////////////////////////////////////////////////////
+      /////////////////////////////////////////////////////
     ////////////////PMS data fetch//////////////////////////////
 
     @Get('/banklist')
@@ -80,7 +80,7 @@ export class RegistrationController {
 
 
     @Get('/branchlist/:code')
-    getmstbankbranch(@Param('code') code) {
+    getmstbankbranch(@Param ('code')code){
         return this.formService.getmstbankbranch(code)
     }
 }
